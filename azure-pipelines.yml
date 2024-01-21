@@ -2,30 +2,28 @@ trigger:
 - develop
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: Default
+  #name: MySelfHostedAgentPool  # Replace with your self-hosted agent pool name
 
 stages:
 - stage: Build
-  displayName: Build the Docker image
+  displayName: Build and run the Docker image
   jobs:
   - job: Build
-    displayName: Build job
+    displayName: Build and run job
     steps:
     - task: Docker@2
       displayName: Build Docker image
       inputs:
         command: build
         dockerfile: $(Build.SourcesDirectory)/Dockerfile
-
-- stage: Run
-  displayName: Run the container
-  jobs:
-  - job: Run
-    displayName: Run job
-    steps:
-    - task: Docker@2
-      displayName: Run container
+    - task: CmdLine@2
+      displayName: Tag Docker image
       inputs:
-        command: run
-        dockerfile: $(Build.SourcesDirectory)/Dockerfile
-        ports: 8000
+        script: |
+          docker tag $(docker_image_name) $(docker_image_name):$(Build.BuildId)
+    - task: CmdLine@2
+      displayName: Run Docker container
+      inputs:
+        script: |
+          docker run $(docker_image_name):$(Build.BuildId)
